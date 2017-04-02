@@ -1,61 +1,61 @@
 from serial import Serial
 
+# Interface to steering servo and power controller
+#    Input values:
+#        Steering: from -500 (full left) to +500 (full right)
+#        Power:    from -500 (full reverse) to +500 (full forward)
+#
+#        All values are further constained to limit steering and
+#        (especially) power.
+STEER_MAX = 500
+POWER_MAX = 150
+
 class PowerSteering:
 
     def __init__(self, port_name, baud_rate, logger):
         self.logger = logger
-        self.logger.write("Starting Power/Steering Communications")
+        self.logger.write("PowerSteering: started.")
         self.serial = Serial(port_name, baud_rate)
-        self.current_power = 1500
-        self.current_speed = 0
+        self.current_steer = 0
+        self.current_power = 0
+        self.set_steer_and_pwr(0,0)
 
-    def set_mode_drive(self):
-        self.logger.write("Set to DRIVE mode")
-        self.serial.write("+++DRIVE+++")
-        self.serial.write("\n")
+    def stop(self):
+        self.logger.write("PowerSteering: stop")
+        self.set_steer_and_pwr(0, 0)
+        self.current_steer = 0
+        self.current_power  = 0
 
-    def set_mode_stop(self):
-        self.logger.write("Set to STOPPED mode")
-        self.serial.write("+++STOP+++")
-        self.serial.write("\n")
-        self.serial.flush()
+    def set_steer_and_pwr(self, steer_value, power_value):
+        self.logger.write("PowerSteering: steer %d, power %d" %
+                          (steer_value, power_value))
+        # Condition values past
+        if steer_value > STEER_MAX:
+            steer_value = STEER_MAX
+        elif steer_value < -STEER_MAX:
+            steer_value = -STEER_MAX
+        if power_value > POWER_MAX:
+            power_value = POWER_MAX
+        elif power_value < -POWER_MAX:
+            power_value = -POWER_MAX
 
-    def set_pwr_and_steer(self, steer_value, target_speed, new_speed, kickStart = 0):
-      # Process Steering Values
-      if steer_value > 500:
-        steer_value = 500
-      elif steer_value < -500:
-        steer_value = -500
-      steer_value = 1500-steer_value
-      
-      #KickStart
-      if kickStart > 1500:
-        self.current_power = kickStart
-        
-      # Calculate the power value
-      delta_speed = target_speed - new_speed
-      acceleration = new_speed - self.current_speed
-      delta_power = delta_speed * 0.1 - acceleration * 0.0
-      self.current_power = self.current_power + delta_power
-      self.logger.write("Power steer- target: %.2f, current: %.2f, power: %d" % (target_speed, new_speed, self.current_power))
-      self.current_speed = new_speed
-      if self.current_power > 1650:
-          self.current_power = 1500
+        # Save current values
+        self.current_steer = steer_value
+        self.current_power = power_value
 
-      self.serial.write(str(steer_value) + "," + str(int(self.current_power)))
-      self.serial.write('\n')
-      self.serial.flush()
-
-    def reverse(self, steer_value, power_value):
-        if steer_value > 500:
-            steer_value = 500
-        elif steer_value < -500:
-            steer_value = -500
-
+        # Convert to servo values
         steer_value = 1500-steer_value
+        power_value = 1500+power_value
 
-        self.logger.write("Reversing: steer=%d, power=%d" % (steer_value, power_value))
-
-        self.serial.write(str(steer_value) + "," + str(power_value))
+        self.serial.write(str(steer_value) + "," + str(int(power_value)))
         self.serial.write('\n')
         self.serial.flush()
+
+    def set_steer(self, steer_value):
+        self.set_steer_and_pwr(steer_value, self.current_power)
+
+    def set_power(self, power_value):
+        self.set_steer_and_pwr(self.current_steer, power_value)
+
+    def delta_power(self, delta_value):
+        self.set_power(self.current_power + delta_value)

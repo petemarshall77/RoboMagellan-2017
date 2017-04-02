@@ -188,8 +188,9 @@ void do_auto()
 {
   boolean isAuto;
 
-  unsigned long loop_start_time;
+  unsigned long last_data_time = millis();
   unsigned long steer_value, power_value;
+  unsigned long current_power = 1500;
   
   Servo steer_servo;
   Servo power_servo;
@@ -199,10 +200,9 @@ void do_auto()
   // Attach servo outputs
   steer_servo.attach(steer_Out);
   power_servo.attach(power_Out);
-  
+
   while (true) {
-    loop_start_time = micros();
-    
+    // Check we are still in auto mode
     isAuto = digitalRead(auto_Pin);
     if(!isAuto) {
       power_servo.writeMicroseconds(1500);
@@ -210,9 +210,15 @@ void do_auto()
       power_servo.detach();
       break;
     }
+
+    // If no command recived in 5 seconds, stop the robot
+    if (millis() - last_data_time > 5000) {
+      power_servo.writeMicroseconds(1500);
+    }
     
     // Process line of data if available
     if (readLine(serialBuffer)) {
+      last_data_time = millis();
       inputString = String(serialBuffer);           
         
       // Process the data string, should be nnnn,nnnn (steer,power)
@@ -243,14 +249,26 @@ void do_auto()
       }
  */           
    
-      // Got good values, and safety switch is off: write power and steering values to hardware
+      // Got good values, kill switch is good, set steering and slew power to demand value
       steer_servo.writeMicroseconds(steer_value);
-      power_servo.writeMicroseconds(power_value);
+      if (power_value > current_power) {
+        while (current_power < power_value) {
+          current_power++;
+          power_servo.writeMicroseconds(current_power);
+          delay(10);
+        }
+      }
+      else if (current_power > power_value) {
+        while (current_power > power_value) {
+          current_power--;
+          power_servo.writeMicroseconds(current_power);
+        }
+      }
     }
   }
 }
 
-// PANIC Function, called when we assume communication with the controller is lost
+// PANIC Function.
 void panic()
 {
     noInterrupts();                  // stop servicing interrupts
