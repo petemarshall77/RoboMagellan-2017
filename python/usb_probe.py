@@ -23,7 +23,7 @@ def probe():
                 out = subprocess.check_output(command.split(),
                                             stderr=subprocess.STDOUT)
 
-                regex = re.compile("{serial}==\"(\w+)\"")
+                regex = re.compile("{serial}==\"([\w\.:]+)\"")
                 match = regex.search(out)
                 if match:
                     serial_num = match.group(1)
