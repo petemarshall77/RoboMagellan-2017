@@ -5,11 +5,12 @@ installed_devices = {
     '95437313334351516052': 'chias-test',
     '95437313335351514292': 'speedometer-test',
     'A6008iFZ':             'atmega-328-test',
+    '0000:00:1a.0':         'gps-test',  
     '9543731313535140B152': 'chias',
     '95437313334351519012': 'compass-bump',
     '9543731333435151B2E1': 'speedometer',
     '9543731333535131D0D2': 'killswitch',
-    '0000:00:1a.0':         'gps'
+    '0000:00:14.0':         'gps'
     }
 port_families = ['/dev/ttyACM', '/dev/ttyUSB']
 
