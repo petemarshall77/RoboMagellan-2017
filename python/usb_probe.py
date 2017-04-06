@@ -7,7 +7,7 @@ installed_devices = {
     'A6008iFZ':             'atmega-328-test',
     '0000:00:1a.0':         'gps-test',  
     '9543731313535140B152': 'chias',
-    '95437313334351519012': 'compass-bump',
+    '95437313334351519012': 'compasswitch',
     '9543731333435151B2E1': 'speedometer',
     '9543731333535131D0D2': 'killswitch',
     '0000:00:14.0':         'gps'
