@@ -44,7 +44,7 @@ class PowerSteering:
         self.current_power = power_value
 
         # Convert to servo values
-        steer_value = 1500-steer_value
+        steer_value = 1500+steer_value
         power_value = 1500+power_value
 
         self.serial.write(str(steer_value) + "," + str(int(power_value)))
