@@ -30,12 +30,13 @@ class Compasswitch:
                 try:
                     data = self.serial.readline().rstrip()
                     self.compassX = float(data.split(',')[0])
-                    self.compassY = int(data.split(',')[1])
+                    self.compassY = float(data.split(',')[1])
                     angle = math.atan2(self.compassY, self.compassX)
                     if angle > 0.0:
                         self.heading = 360 - angle * 180 / math.pi
                     else:
                         self.heading = -angle * 180 / math.pi
+                    self.heading = 1.13 * self.heading - 15.5
                     if int(data.split(',')[2]) == 1:
                         self.bump_switch = True
                     else:

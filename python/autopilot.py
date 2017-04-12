@@ -8,17 +8,19 @@
 # therefore should be engaged and disengaged as necessary.
 #
 import time
+import utils
 
 class Autopilot:
 
-    def __init__(self, powersteering, speedometer, logger):
+    def __init__(self, powersteering, speedometer, compasswitch, logger):
         self.logger = logger
         self.logger.write("Autopilot: starting")
         self.powersteering = powersteering
+        self.compasswitch = compasswitch
         self.speedo = speedometer
         self._running = False
         self.target_speed = 0
-        self.target_distance = 0
+        self.target_direction = 0
         self.engaged = False
 
     def run(self):
@@ -27,6 +29,7 @@ class Autopilot:
 
         while (self._running == True):
             if self.engaged == True:
+                # Power
                 if self.target_speed > self.speedo.speed:
 		    delta_value = int((self.target_speed - self.speedo.speed) * 2)
                     self.logger.write("Autopilot: speed = %f, increasing power" % self.speedo.speed)
@@ -35,6 +38,12 @@ class Autopilot:
 		    delta_value = int((self.target_speed - self.speedo.speed) * 2)
                     self.logger.write("Autopilot: speed = %f, decreasing power" % self.speedo.speed)
                     self.powersteering.delta_power(delta_value)
+                # Direction
+                delta_angle = int(utils.delta_angle(self.target_direction,
+                                                    self.compasswitch.heading))
+		self.logger.write("Autopilot: target: %d, compass = %d, delta = %d" % (self.target_direction, self.compasswitch.heading, delta_angle))
+                self.powersteering.set_steer(delta_angle * 4)
+
 	    time.sleep(0.25)
 
     def terminate(self):
