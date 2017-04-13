@@ -13,7 +13,7 @@ class Camera:
         self.logger.write("Camera: starting")
         self.socket = socket(AF_INET, SOCK_STREAM)
         self.socket.connect(('localhost', port_num))
-        self.blob_location = 0
+        self.blob_location = 0 # TODO - fix this awful name!
         self.blob_size = 0
 
     def terminate(self):

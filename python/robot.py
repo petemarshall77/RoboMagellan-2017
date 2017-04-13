@@ -63,7 +63,7 @@ class Robot:
 
         self.autopilot.engage()
 
-        while distance > 7.0:
+        while distance > 10.0:
             self.autopilot.target_speed = speed
             self.autopilot.target_direction = bearing
             (distance, bearing) = utils.get_distance_and_bearing(
@@ -73,6 +73,18 @@ class Robot:
                 tgt_lon)
 
         self.autopilot.disengage()
+
+    def seek_cone(self):
+        self.logger.write("Robot: seeking cone")
+        self.powersteering.set_power(1)
+        while self.camera.blob_size > 0:
+	    self.logger.write("Robot: seek_cone; %d, %d" % (self.camera.blob_location, self.camera.blob_size))	
+            if self.compasswitch.bump_switch == True:
+                self.logger.write("Robot: found cone")
+                return True
+            self.powersteering.set_steer((self.camera.blob_location - 32) * 10)
+        self.logger.write("Robot: missed cone")
+        return False
 
     def stop(self):
         self.autopilot.disengage()
