@@ -1,160 +1,80 @@
-from utils import *
-import time
+#
+# MONTY III - Main Robot class
+#
+from threading import Thread
+
+from logger import Logger
+from powersteering import PowerSteering
+from speedometer import Speedometer
+from compasswitch import Compasswitch
+from autopilot import Autopilot
+from camera import Camera
+from gps import GPS
+import usb_probe
+import utils
 
 class Robot:
 
-    def __init__(self, powersteering, compass, gps, camera, logger):
-        self.proportional_steering_gain = 2.5
-        self.differential_steering_gain = 0.2
-        self.camera_speed = 0.8
+    def __init__(self):
+        self.logger = Logger()
+        self.logger.write("Robot: initializing")
+        ports = usb_probe.probe()
+        self.logger.write("Robot: found USB ports...")
+        for port in ports:
+            self.logger.write("       %s, %s" % (ports[port], port))
+        self.powersteering = PowerSteering(ports['chias'], 9600, self.logger)
+        self.speedometer   = Speedometer(ports['speedometer'], 9600, self.logger)
+        self.compasswitch  = Compasswitch(ports['compasswitch'], 9600, self.logger)
+        self.autopilot     = Autopilot(self.powersteering,
+				       self.speedometer,
+				       self.compasswitch,
+				       self.logger)
+        self.camera        = Camera(9788, self.logger)
+        self.gps           = GPS(ports['gps'], 4800, self.logger)
 
-        self.logger = logger
-        self.powersteering = powersteering
-        self.compass = compass
-        self.gps = gps
-        self.camera = camera
-        self.run_start_time = time.time()
+    def initialize(self):
+        self.logger.write("Robot: initializing")
+        self.speedometer_thread = Thread(target = self.speedometer.run)
+        self.compasswitch_thread = Thread(target = self.compasswitch.run)
+        self.autopilot_thread = Thread(target = self.autopilot.run)
+        self.gps_thread = Thread(target = self.gps.run)
+        self.speedometer_thread.start()
+        self.compasswitch_thread.start()
+        self.autopilot_thread.start()
+        self.gps_thread.start()
 
-    def drive_to_waypoint2(self, target_speed, latitude, longitude, kickStart = 0):
-        self.logger.write("drive_to: %s, %s, %s" % (target_speed, latitude, longitude))
+    def terminate(self):
+        self.logger.write("Robot: terminating")
+        self.speedometer.terminate()
+        self.compasswitch.terminate()
+        self.autopilot.terminate()
+        self.gps.terminate()
+        self.speedometer_thread.join()
+        self.compasswitch_thread.join()
+        self.autopilot_thread.join()
+        self.gps_thread.join()
 
-        (currentLat, currentLong) = self.gps.get_GPS()
-        (currentDistance, currentBearing) = Utils.get_distance_and_bearing(currentLat, currentLong, latitude, longitude)
-        delta_angle_previous = 0
+    def drive_to_waypoint(self, tgt_lat, tgt_lon, speed):
+        (distance, bearing) = utils.get_distance_and_bearing(
+            self.gps.latitude,
+            self.gps.longitude,
+            tgt_lat,
+            tgt_lon)
 
-#        while not self.in_camera_regime(currentDistance, self.camera.get_camera_values()[1]): #TODO: add camera class + this method
-    	while currentDistance > 5.0: 
-            compass_value = self.compass.get_compass()
-            current_speed = self.compass.get_speed()
-            delta_angle = currentBearing - compass_value
-            delta_angle = self.reduce_delta_angle(delta_angle)
+        self.autopilot.engage()
 
-            steer_value = self.calculate_steer_value(delta_angle, delta_angle_previous)
+        while distance > 7.0:
+            self.autopilot.target_speed = speed
+            self.autopilot.target_direction = bearing
+            (distance, bearing) = utils.get_distance_and_bearing(
+                self.gps.latitude,
+                self.gps.longitude,
+                tgt_lat,
+                tgt_lon)
 
-            delta_angle_previous = delta_angle
+        self.autopilot.disengage()
 
-            self.logger.write("TIME: %s, LAT: %s, LON: %s " \
-                % (time.time() - self.run_start_time, currentLat, currentLong))
-                
-            self.logger.write("BEARING: %s, COMPASS: %s, DELTA: %s" \
-                % (currentBearing, compass_value, delta_angle))
-                
-            self.logger.write("DIST: %s, TARGET_SPEED %s, CURRENT_SPEED %s, STEER %s" \
-                % (currentDistance, target_speed, current_speed, steer_value))
-                
-            self.powersteering.set_pwr_and_steer(steer_value, target_speed, current_speed, kickStart = kickStart)
-
-            (currentLat,currentLong) = self.gps.get_GPS()
-            (currentDistance,currentBearing) = Utils.get_distance_and_bearing(currentLat, currentLong, latitude, longitude)
-
-    def drive_to_waypoint(self, target_speed, latitude, longitude, kickStart = 0):
-        self.logger.write("drive_to: %s, %s, %s" % (target_speed, latitude, longitude))
-
-        (currentLat, currentLong) = self.gps.get_GPS()
-        (currentDistance, currentBearing) = Utils.get_distance_and_bearing(currentLat, currentLong, latitude, longitude)
-        delta_angle_previous = 0
-
-        while not self.in_camera_regime(currentDistance, self.camera.get_camera_values()[1]): #TODO: add camera class + this method
-#	while currentDistance > 10.0: 
-            compass_value = self.compass.get_compass()
-            current_speed = self.compass.get_speed()
-            delta_angle = currentBearing - compass_value
-            delta_angle = self.reduce_delta_angle(delta_angle)
-
-            steer_value = self.calculate_steer_value(delta_angle, delta_angle_previous)
-
-            delta_angle_previous = delta_angle
-
-            self.logger.write("TIME: %s, LAT: %s, LON: %s " \
-                % (time.time() - self.run_start_time, currentLat, currentLong))
-                
-            self.logger.write("BEARING: %s, COMPASS: %s, DELTA: %s" \
-                % (currentBearing, compass_value, delta_angle))
-                
-            self.logger.write("DIST: %s, TARGET_SPEED %s, CURRENT_SPEED %s, STEER %s" \
-                % (currentDistance, target_speed, current_speed, steer_value))
-                
-            self.powersteering.set_pwr_and_steer(steer_value, target_speed, current_speed, kickStart = kickStart)
-
-            (currentLat,currentLong) = self.gps.get_GPS()
-            (currentDistance,currentBearing) = Utils.get_distance_and_bearing(currentLat, currentLong, latitude, longitude)
-
-    def drive_to_cone(self, speed, latitude, longitude, kickStart = 0):
-        found_it = False
-        while found_it == False:
-            self.drive_to_waypoint(speed, latitude, longitude, kickStart = kickStart)
-	    kickStart = 0
-            (currentLat, currentLong) = self.gps.get_GPS()
-            (currentDistance,currentBearing) = Utils.get_distance_and_bearing(currentLat, currentLong, latitude, longitude)
-
-            while self.in_camera_regime(currentDistance, self.camera.get_camera_values()[1]):
-                current_speed = self.compass.get_speed()
-                camera_value = self.camera.get_camera_values()[0]
-                if camera_value == 0:
-                    self.logger.write("Camera Mode - No data")
-                    time.sleep(0.2)
-                    steer_value = 0
-                else:
-                    steer_value = int((camera_value * (500.0/320.0))-500)
-                    self.logger.write("Camera Mode - DISTANCE: %s CAMERA-VALUE: %s, STEER: %s" % \
-                        (currentDistance, camera_value, steer_value))
-
-                self.powersteering.set_pwr_and_steer(steer_value, self.camera_speed, current_speed)
-                if self.compass.get_bump_switch_state() == True:
-                    found_it = True
-                    self.logger.write("Found it!")
-                    self.stop_driving()
-                    time.sleep(1)
-                    self.powersteering.reverse(0, 1400)
-                    time.sleep(3)
-                    self.stop_driving()
-                    break
-
-                (currentLat, currentLong) = self.gps.get_GPS()
-                (currentDistance, currentBearing) = Utils.get_distance_and_bearing(currentLat, currentLong, latitude, longitude)
-
-    def drive_gps_only():
-        counter = 0
-        total_lat = 0
-        total_long = 0
-        while True:
-            (latitude, longitude) = self.gps.get_GPS()
-            total_lat += latitude
-            total_long += longitude
-            counter += 1
-            print counter, total_lat/counter, total_long/counter
-            time.sleep(1)
-            if counter > 29:
-                counter = 0
-                total_lat = 0
-                total_long = 0
-                time.sleep(10)
-
-    def drive(self, speed, target_heading, time_in_seconds):
-        start_time = time.time()
-        while ((time.time() - start_time) < time_in_seconds):
-            compass_value = self.compass.get_compass()
-            current_speed = self.compass.get_speed()
-            delta_angle = target_heading - compass_value
-            delta_angle = self.reduce_delta_angle(delta_angle)
-            steer_value = int((500.0/180.0) * delta_angle * self.proportional_steering_gain)
-            self.powersteering.set_pwr_and_steer(steer_value, speed, current_speed)
-
-    def stop_driving(self):
-      self.powersteering.reverse(0, 1500)
-
-    def in_camera_regime(self, currentDistance, pixelCount):
-        self.logger.write("Camera Regime %d %d" % (currentDistance, pixelCount))
-        self.logger.write(currentDistance < 10 and pixelCount > (currentDistance * -20.0/8.0 + 35)**2)
-        return currentDistance < 10 and pixelCount > (currentDistance * -20.0/8.0 + 35)**2
-
-    def calculate_steer_value(self, delta_angle, delta_angle_previous):
-        delta_delta_angle = delta_angle_previous - delta_angle
-        return int((500.0/180.0) * (delta_angle * self.proportional_steering_gain - delta_delta_angle * self.differential_steering_gain))
-
-    def reduce_delta_angle(self, delta_angle):
-        if delta_angle > 180:
-            return delta_angle - 360
-        elif delta_angle < -180:
-            return 360 + delta_angle
-        return delta_angle
+    def stop(self):
+        self.autopilot.disengage()
+        self.powersteering.set_power(0)
+                         
