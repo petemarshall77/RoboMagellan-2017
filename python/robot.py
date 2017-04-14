@@ -38,10 +38,12 @@ class Robot:
         self.compasswitch_thread = Thread(target = self.compasswitch.run)
         self.autopilot_thread = Thread(target = self.autopilot.run)
         self.gps_thread = Thread(target = self.gps.run)
+        self.camera_thread = Thread(target = self.camera.run)
         self.speedometer_thread.start()
         self.compasswitch_thread.start()
         self.autopilot_thread.start()
         self.gps_thread.start()
+        self.camera_thread.start()
 
     def terminate(self):
         self.logger.write("Robot: terminating")
@@ -49,10 +51,12 @@ class Robot:
         self.compasswitch.terminate()
         self.autopilot.terminate()
         self.gps.terminate()
+        self.camera.terminate()
         self.speedometer_thread.join()
         self.compasswitch_thread.join()
         self.autopilot_thread.join()
         self.gps_thread.join()
+	self.camera_thread.join()
 
     def drive_to_waypoint(self, tgt_lat, tgt_lon, speed):
         (distance, bearing) = utils.get_distance_and_bearing(
@@ -75,8 +79,8 @@ class Robot:
         self.autopilot.disengage()
 
     def seek_cone(self):
-        self.logger.write("Robot: seeking cone")
-        self.powersteering.set_power(1)
+        self.logger.write("Robot: seeking cone. Blob size %d, BlobX %d" % (self.camera.blob_size, self.camera.blob_location))
+        self.powersteering.set_power(65) # TODO - this should be autopilot
         while self.camera.blob_size > 0:
 	    self.logger.write("Robot: seek_cone; %d, %d" % (self.camera.blob_location, self.camera.blob_size))	
             if self.compasswitch.bump_switch == True:
