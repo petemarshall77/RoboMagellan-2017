@@ -20,9 +20,9 @@ void setup() {
   // Get the list of camera modes
   String[] cameras = Capture.list();
   for (int i = 0; i < cameras.length; i++) {
-    println(cameras[i]);
+    println(i, cameras[i]);
   }
-  cam = new Capture(this, cameras[5]);
+  cam = new Capture(this, cameras[30]);
   cam.start();
   
   // Screen settings
