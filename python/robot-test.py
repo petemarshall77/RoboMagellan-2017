@@ -1,6 +1,7 @@
 # MONTY III robot.py test
 
 import time
+import traceback
 
 from robot import Robot
 
@@ -17,7 +18,7 @@ try:
     robot.stop()
 
 except:
-    pass
+    robot.logger.write(traceback.format_exc())
 
 robot.terminate()
 
