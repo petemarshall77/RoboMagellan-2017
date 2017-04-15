@@ -9,11 +9,15 @@ robot = Robot()
 robot.initialize()
 
 try:
-    robot.drive_to_waypoint(33.77817333333, 118.41868333333, 2.0)
-    robot.seek_cone()
-    robot.stop()
-    time.sleep(3)
-    robot.drive_to_waypoint(33.778341666666, 118.418971666666, 2.0)
+    robot.drive_to_waypoint(33.778258333333, 118.418648333333, 2.0)
+    if robot.seek_cone():
+        robot.stop()
+        time.sleep(2)
+        robot.back_up(5)
+
+    robot.drive_to_waypoint(33.778475, 118.41908333333, 2.0)
+
+    robot.drive_to_waypoint(33.778411666666, 118.418958333333, 2.0)
     robot.seek_cone()
     robot.stop()
 

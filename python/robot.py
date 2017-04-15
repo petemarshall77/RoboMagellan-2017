@@ -2,6 +2,7 @@
 # MONTY III - Main Robot class
 #
 from threading import Thread
+import time
 
 from logger import Logger
 from powersteering import PowerSteering
@@ -80,17 +81,26 @@ class Robot:
 
     def seek_cone(self):
         self.logger.write("Robot: seeking cone. Blob size %s, BlobX %s" % (self.camera.blob_size, self.camera.blob_location))
-        self.powersteering.set_power(65) # TODO - this should be autopilot
+        self.autopilot.speed_engage()
+        self.autopilot.target_speed = 1.0
         while self.camera.blob_size > 0:
 	    self.logger.write("Robot: seek_cone; %s, %s" % (self.camera.blob_location, self.camera.blob_size))	
             if self.compasswitch.bump_switch == True:
                 self.logger.write("Robot: found cone")
+                self.autopilot.disengage()
                 return True
             self.powersteering.set_steer((int(self.camera.blob_location) - 32) * 10)
         self.logger.write("Robot: missed cone")
+        self.autopilot.disengage()
         return False
 
     def stop(self):
         self.autopilot.disengage()
         self.powersteering.set_power(0)
                          
+    def back_up(self, delay):
+        self.autopilot.disengage()
+        self.powersteering.set_power(-90)
+        self.powersteering.set_steer(0)
+        time.sleep(delay)
+        self.powersteering.set_power(0)

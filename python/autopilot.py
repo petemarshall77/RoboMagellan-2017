@@ -21,27 +21,35 @@ class Autopilot:
         self._running = False
         self.target_speed = 0
         self.target_direction = 0
-        self.engaged = False
+        self.speed_engaged = False
+        self.steer_engaged = False
 
     def run(self):
         self._running = True
         self.logger.write("Autopilot: running")
 
         while (self._running == True):
-            if self.engaged == True:
-                # Power
+            if self.speed_engaged == True:
                 if self.target_speed > self.speedo.speed:
-		    delta_value = int((self.target_speed - self.speedo.speed) * 2)
-                    self.logger.write("Autopilot: speed = %f, increasing power" % self.speedo.speed)
+		    delta_value = int((self.target_speed - self.speedo.speed)
+                                      * 2)
+                    self.logger.write("Autopilot: speed = %f, increasing power"
+                                      % self.speedo.speed)
                     self.powersteering.delta_power(delta_value)
                 else:
-		    delta_value = int((self.target_speed - self.speedo.speed) * 2)
-                    self.logger.write("Autopilot: speed = %f, decreasing power" % self.speedo.speed)
+		    delta_value = int((self.target_speed - self.speedo.speed)
+                                      * 2)
+                    self.logger.write("Autopilot: speed = %f, decreasing power"
+                                      % self.speedo.speed)
                     self.powersteering.delta_power(delta_value)
-                # Direction
+            if self.steer_engaged == True:
                 delta_angle = int(utils.delta_angle(self.target_direction,
                                                     self.compasswitch.heading))
-		self.logger.write("Autopilot: target: %d, compass = %d, delta = %d" % (self.target_direction, self.compasswitch.heading, delta_angle))
+		self.logger.write(
+                    "Autopilot: target: %d, compass = %d, delta = %d"
+                    % (self.target_direction,
+                       self.compasswitch.heading,
+                       delta_angle))
                 self.powersteering.set_steer(delta_angle * 4)
 
 	    time.sleep(0.25)
@@ -52,8 +60,14 @@ class Autopilot:
 
     def engage(self):
         self.logger.write("Autopilot: engaged")
-        self.engaged = True
+        self.steer_engaged = True
+        self.speed_engaged = True
 
     def disengage(self):
         self.logger.write("Autopilot: disengaged")
-        self.engaged = False
+        self.steer_engaged = False
+        self.speed_engaged = False
+
+    def speed_engage(self):
+        self.logger.write("Autopilot: speed engaged")
+        self.speed_engaged = True
