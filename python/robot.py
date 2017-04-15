@@ -79,14 +79,14 @@ class Robot:
         self.autopilot.disengage()
 
     def seek_cone(self):
-        self.logger.write("Robot: seeking cone. Blob size %d, BlobX %d" % (self.camera.blob_size, self.camera.blob_location))
+        self.logger.write("Robot: seeking cone. Blob size %s, BlobX %s" % (self.camera.blob_size, self.camera.blob_location))
         self.powersteering.set_power(65) # TODO - this should be autopilot
         while self.camera.blob_size > 0:
-	    self.logger.write("Robot: seek_cone; %d, %d" % (self.camera.blob_location, self.camera.blob_size))	
+	    self.logger.write("Robot: seek_cone; %s, %s" % (self.camera.blob_location, self.camera.blob_size))	
             if self.compasswitch.bump_switch == True:
                 self.logger.write("Robot: found cone")
                 return True
-            self.powersteering.set_steer((self.camera.blob_location - 32) * 10)
+            self.powersteering.set_steer((int(self.camera.blob_location) - 32) * 10)
         self.logger.write("Robot: missed cone")
         return False
 
