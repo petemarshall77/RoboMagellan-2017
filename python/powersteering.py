@@ -47,7 +47,7 @@ class PowerSteering:
         steer_value = 1500+steer_value
         power_value = 1500+power_value
 
-        self.serial.write(str(steer_value) + "," + str(int(power_value)))
+        self.serial.write(str(int(steer_value)) + "," + str(int(power_value)))
         self.serial.write('\n')
         self.serial.flush()
 

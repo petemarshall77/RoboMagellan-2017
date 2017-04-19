@@ -19,6 +19,7 @@ class Robot:
     def __init__(self):
         self.logger = Logger()
         self.logger.write("Robot: initializing")
+        self.logger.display("Starting...")
         ports = usb_probe.probe()
         self.logger.write("Robot: found USB ports...")
         for port in ports:
@@ -35,6 +36,7 @@ class Robot:
 
     def initialize(self):
         self.logger.write("Robot: initializing")
+        self.logger.display("Initializing...")
         self.speedometer_thread = Thread(target = self.speedometer.run)
         self.compasswitch_thread = Thread(target = self.compasswitch.run)
         self.autopilot_thread = Thread(target = self.autopilot.run)
@@ -48,6 +50,7 @@ class Robot:
 
     def terminate(self):
         self.logger.write("Robot: terminating")
+        self.logger.display("Terminating...")
         self.speedometer.terminate()
         self.compasswitch.terminate()
         self.autopilot.terminate()
@@ -60,6 +63,7 @@ class Robot:
 	self.camera_thread.join()
 
     def drive_to_waypoint(self, tgt_lat, tgt_lon, speed):
+        self.logger.display("Drive 2 waypoint")
         (distance, bearing) = utils.get_distance_and_bearing(
             self.gps.latitude,
             self.gps.longitude,
@@ -81,6 +85,7 @@ class Robot:
 
     def seek_cone(self):
         self.logger.write("Robot: seeking cone. Blob size %s, BlobX %s" % (self.camera.blob_size, self.camera.blob_location))
+        self.logger.display("Seek Cone")
         self.autopilot.speed_engage()
         self.autopilot.target_speed = 1.0
         while self.camera.blob_size > 0:
@@ -99,6 +104,7 @@ class Robot:
         self.powersteering.set_power(0)
                          
     def back_up(self, delay):
+        self.logger.display("Reversing")
         self.autopilot.disengage()
         self.powersteering.set_power(-90)
         self.powersteering.set_steer(0)
