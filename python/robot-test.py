@@ -7,6 +7,7 @@ from robot import Robot
 
 robot = Robot()
 robot.initialize()
+robot.wait_for_start_switch()
 
 try:
     robot.drive_to_waypoint(33.778258333333, 118.418648333333, 2.0)

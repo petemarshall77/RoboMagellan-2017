@@ -62,6 +62,14 @@ class Robot:
         self.gps_thread.join()
 	self.camera_thread.join()
 
+    def wait_for_start_switch(self):
+        self.logger.write("Robot: waiting for start switch")
+        self.logger.display("Press start")
+        while self.compasswitch.start_switch == False:
+            time.sleep(0.1)
+        self.logger.write("Robot: start switch activated")
+        self.logger.display("Go!")
+
     def drive_to_waypoint(self, tgt_lat, tgt_lon, speed):
         self.logger.display("Drive 2 waypoint")
         (distance, bearing) = utils.get_distance_and_bearing(
